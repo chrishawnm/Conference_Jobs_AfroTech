@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Listings by Company</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 40px; background: #f9f9f9; }
+  select { padding: 8px; margin-bottom: 20px; }
+  ul { list-style-type: none; padding: 0; }
+  li { margin-bottom: 8px; }
+  a { text-decoration: none; color: #0073e6; }
+  a:hover { text-decoration: underline; }
+  .no-jobs { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>Job Listings by Company</h2>
+
+<select id="companySelect" onchange="showJobs()">
+  <option value="">-- Select a Company --</option>
+</select>
+
+<div id="jobResults"></div>
+
+<script>
+const noJobs = [
+  "Autodesk", "Cloudflare", "Datadog", "Match Group", "Mercury",
+  "Nvidia", "Paloalto Networks", "Patreon", "Pure Storage",
+  "Riot Games", "Servicenow", "Soundcloud", "Twillio", "Expedia Group"
+];
+
+let jobs = {};  // will be built from JSON data
+
+// Load jobs.json dynamically
+fetch('jobs.json')
+  .then(response => response.json())
+  .then(data => {
+    // Build dictionary grouped by company
+    data.forEach(row => {
+      const company = row.Company.trim();
+      if (!jobs[company]) jobs[company] = [];
+      jobs[company].push({ title: row.Title, link: row.Link });
+    });
+
+    populateDropdown();
+  })
+  .catch(error => {
+    console.error('Error loading jobs.json:', error);
+    document.getElementById("jobResults").innerHTML = 
+      "<p class='no-jobs'>Failed to load job data.</p>";
+  });
+
+function populateDropdown() {
+  const select = document.getElementById("companySelect");
+  const companies = Object.keys(jobs).sort();
+  companies.forEach(company => {
+    const opt = document.createElement("option");
+    opt.value = company;
+    opt.textContent = company;
+    select.appendChild(opt);
+  });
+  // Include no-jobs companies too
+  noJobs.forEach(c => {
+    if (!companies.includes(c)) {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      select.appendChild(opt);
+    }
+  });
+}
+
+function showJobs() {
+  const company = document.getElementById("companySelect").value;
+  const resultsDiv = document.getElementById("jobResults");
+  resultsDiv.innerHTML = "";
+
+  if (!company) return;
+
+  if (noJobs.includes(company)) {
+    resultsDiv.innerHTML = `<p class="no-jobs">No jobs found.</p>`;
+    return;
+  }
+
+  const companyJobs = jobs[company];
+  if (!companyJobs || companyJobs.length === 0) {
+    resultsDiv.innerHTML = `<p class="no-jobs">No jobs found.</p>`;
+    return;
+  }
+
+  const ul = document.createElement("ul");
+  companyJobs.forEach(job => {
+    const li = document.createElement("li");
+    li.innerHTML = `<a href="${job.link}" target="_blank">${job.title}</a>`;
+    ul.appendChild(li);
+  });
+  resultsDiv.appendChild(ul);
+}
+</script>
+
+</body>
+</html>
